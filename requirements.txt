@@ -6,3 +6,5 @@ omegaconf
 imageio
 tqdm
 gradio
+torch
+torchvision
