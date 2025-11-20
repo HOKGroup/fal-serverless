@@ -1,10 +1,8 @@
+torch
+torchvision
 huggingface_hub[hf_xet]
 diffusers
 transformers
-typer
 omegaconf
 imageio
-tqdm
 gradio
-torch
-torchvision
