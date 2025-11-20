@@ -1,8 +1,10 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
 torch
 torchvision
 huggingface_hub[hf_xet]
 diffusers
-transformers
+transformers==4.37.2
+tokenizers==0.15.2
 omegaconf
 imageio
 gradio
