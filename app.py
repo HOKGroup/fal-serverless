@@ -41,10 +41,11 @@ def load_model(ckpt_path):
     return model
 
 def run_model(model, img: Image.Image):
+    device = next(model.parameters()).device
     to_tensor = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
-    image = to_tensor(img).to(next(model.parameters()).device)
+    image = to_tensor(img).to(device)
     x = v2.Resize(size=(1024, 1024), antialias=True)(image).unsqueeze(0)
-    with torch.no_grad() as no_grad, torch.autocast(device_type="cuda") as amp:
+    with torch.no_grad() as no_grad, torch.autocast(device_type=device.type) as amp:
         output = model(x)
     return output
 
