@@ -7,6 +7,7 @@ import copy
 from omegaconf import OmegaConf
 from torchvision.transforms import v2
 from torchvision.transforms.functional import to_pil_image
+from huggingface_hub import hf_hub_download
 
 from chord import ChordModel
 from chord.module import make
@@ -26,6 +27,8 @@ EXAMPLES_USECASE_3 = [
 ]
 
 MODEL_OBJ = None
+#MODEL_CKPT_PATH = hf_hub_download(repo_id="Ubisoft/ubisoft-laforge-chord", filename="chord_v1.ckpt")
+MODEL_CKPT_PATH = hf_hub_download(repo_id="ksangk/Chord-V1-ckpt", filename="chord_v1.ckpt")
 def load_model(ckpt_path):
     print("Loading model from:", ckpt_path)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -43,7 +46,6 @@ def run_model(model, img: Image.Image):
     x = v2.Resize(size=(1024, 1024), antialias=True)(image).unsqueeze(0)
     with torch.no_grad() as no_grad, torch.autocast(device_type="cuda") as amp:
         output = model(x)
-    output.update({"input": image}) 
     return output
 
 def relit(model, maps):
@@ -60,12 +62,12 @@ def relit(model, maps):
     rgb = model.model.compute_render(maps, camera, pos, light).squeeze(0).permute(0,3,1,2)  # GxBxHxWxC -> BxCxHxW
     return torch.clamp(rgb_to_srgb(rgb), 0, 1)
 
-def inference(img, ckpt_path):
+def inference(img):
     global MODEL_OBJ
 
-    if MODEL_OBJ is None or getattr(MODEL_OBJ, "_ckpt", None) != ckpt_path:
-        MODEL_OBJ = load_model(ckpt_path)
-        MODEL_OBJ._ckpt = ckpt_path  # store path inside object
+    if MODEL_OBJ is None or getattr(MODEL_OBJ, "_ckpt", None) != MODEL_CKPT_PATH:
+        MODEL_OBJ = load_model(MODEL_CKPT_PATH)
+        MODEL_OBJ._ckpt = MODEL_CKPT_PATH  # store path inside object
 
     if img is None:
         return None, None, None, None, None
@@ -85,14 +87,9 @@ def inference(img, ckpt_path):
 
 with gr.Blocks(title="Chord") as demo:
 
-    gr.Markdown("# **Chord: Chain of Rendering Decomposition for PBR Material Estimation from Generated Texture images**")
-    ckpt_path = gr.Textbox(
-        label="Model Checkpoint Path",
-        value="chord_v1.ckpt",
-        placeholder="Path to your model checkpoint",
-    )
-    gr.Markdown("Upload an image or select an example to estimate PBR channels and render the result under custom lighting.")
-
+    gr.Markdown("# **Chord: Chain of Rendering Decomposition for PBR Material Estimation from Generated Texture Images**")
+    gr.Markdown("Upload an image or select an example to estimate PBR channels.")
+    
     with gr.Row():
         with gr.Column():
             input_img = gr.Image(type="pil", label="Input Image", height=512)
@@ -132,10 +129,9 @@ with gr.Blocks(title="Chord") as demo:
 
     run_button.click(
         inference,
-        inputs=[input_img, ckpt_path],
+        inputs=[input_img],
         outputs=[basecolor_out, normal_out, roughness_out, metallic_out, render_out]
     )
-
 
 if __name__ == "__main__":
     demo.launch()
