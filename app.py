@@ -7,7 +7,7 @@ import copy
 from omegaconf import OmegaConf
 from torchvision.transforms import v2
 from torchvision.transforms.functional import to_pil_image
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, login
 
 from chord import ChordModel
 from chord.module import make
@@ -27,8 +27,8 @@ EXAMPLES_USECASE_3 = [
 ]
 
 MODEL_OBJ = None
-#MODEL_CKPT_PATH = hf_hub_download(repo_id="Ubisoft/ubisoft-laforge-chord", filename="chord_v1.ckpt")
-MODEL_CKPT_PATH = hf_hub_download(repo_id="ksangk/Chord-V1-ckpt", filename="chord_v1.ckpt")
+login(token=os.environ["HF_TOKEN"])
+MODEL_CKPT_PATH = hf_hub_download(repo_id="Ubisoft/ubisoft-laforge-chord", filename="chord_v1.ckpt")
 def load_model(ckpt_path):
     print("Loading model from:", ckpt_path)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
