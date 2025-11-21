@@ -7,6 +7,7 @@ sdk: gradio
 sdk_version: 5.49.1
 app_file: app.py
 pinned: false
+python_version: 3.12
 ---
 
 <div align="center">
@@ -22,7 +23,7 @@ Official implementation of the paper "**Chord: Chain of Rendering Decomposition 
 
 ## License
 
-This project is released under the **Ubisoft Machine Learning License (Research-Only - Copyleft)**. See the full terms in the [LICENSE](LICENSE) file
+This project is released under the **Ubisoft Machine Learning License (Research-Only - Copyleft)**. See the full terms in the [LICENSE](LICENSE) file.
 
 ## Citation
 
