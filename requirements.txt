@@ -8,3 +8,4 @@ tokenizers==0.22.1
 omegaconf
 imageio
 gradio
+spaces

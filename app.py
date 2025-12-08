@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 from torchvision.transforms import v2
 from torchvision.transforms.functional import to_pil_image
 from huggingface_hub import hf_hub_download, login
+import spaces
 
 from chord import ChordModel
 from chord.module import make
@@ -63,6 +64,7 @@ def relit(model, maps):
     rgb = model.model.compute_render(maps, camera, pos, light).squeeze(0).permute(0,3,1,2)  # GxBxHxWxC -> BxCxHxW
     return torch.clamp(rgb_to_srgb(rgb), 0, 1)
 
+@spaces.GPU
 def inference(img):
     global MODEL_OBJ
 
