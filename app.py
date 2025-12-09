@@ -13,6 +13,7 @@ import spaces
 from chord import ChordModel
 from chord.module import make
 from chord.util import get_positions, rgb_to_srgb
+from chord.io import load_torch_file
 
 EXAMPLES_USECASE_1 = [
     [f"examples/generated/{f}"] 
@@ -29,14 +30,14 @@ EXAMPLES_USECASE_3 = [
 
 MODEL_OBJ = None
 login(token=os.environ["HF_TOKEN"])
-MODEL_CKPT_PATH = hf_hub_download(repo_id="Ubisoft/ubisoft-laforge-chord", filename="chord_v1.ckpt")
+MODEL_CKPT_PATH = hf_hub_download(repo_id="Ubisoft/ubisoft-laforge-chord", filename="chord_v1.safetensors")
 def load_model(ckpt_path):
     print("Loading model from:", ckpt_path)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config = OmegaConf.load("config/chord.yaml")
     model = ChordModel(config)
-    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    model.load_state_dict(ckpt["state_dict"])
+    state_dict = load_torch_file(ckpt_path)
+    model.load_state_dict(state_dict)
     model.eval()
     model.to(device)
     return model
