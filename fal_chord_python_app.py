@@ -1,11 +1,13 @@
 import copy
+import logging
 from pathlib import Path
-
-import fal
-from fal.toolkit import Image
 from typing import Optional
 
+import fal
+from fal.toolkit import FAL_MODEL_WEIGHTS_DIR, Image
 from pydantic import BaseModel, Field
+
+log = logging.getLogger(__name__)
 
 
 class Input(BaseModel):
@@ -61,6 +63,7 @@ class ChordPBR(fal.App):
 
     def setup(self):
         import os
+        import time
 
         import torch
         from huggingface_hub import hf_hub_download
@@ -70,39 +73,43 @@ class ChordPBR(fal.App):
         from chord import ChordModel
         from chord.io import load_torch_file
 
-        # Enable fast Rust-based HF downloads + cache to persistent storage
         os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-        os.environ.setdefault("HF_HOME", "/data/.cache/huggingface")
 
         # XET high-performance mode: more concurrency for large weight files
         os.environ["HF_XET_HIGH_PERFORMANCE"] = "1"
         os.environ["HF_XET_CHUNK_CACHE_SIZE_BYTES"] = "1000000000000"
         os.environ["HF_XET_NUM_CONCURRENT_RANGE_GETS"] = "32"
 
-        # Download Chord weights to /data volume for persistent caching
-        # Try local cache first to skip API calls on warm starts
+        # Download Chord weights — try local cache first to skip API calls on warm starts
+        weights_dir = str(FAL_MODEL_WEIGHTS_DIR / "chord")
         dl_kwargs = dict(
             repo_id=HF_REPO_ID,
             filename=HF_FILENAME,
-            local_dir="/data/models/chord",
+            local_dir=weights_dir,
         )
+        t0 = time.monotonic()
         try:
             ckpt_path = hf_hub_download(**dl_kwargs, local_files_only=True)
+            log.info("Weights cache hit (%s)", weights_dir)
         except LocalEntryNotFoundError:
+            log.info("Downloading weights from %s ...", HF_REPO_ID)
             ckpt_path = hf_hub_download(**dl_kwargs)
+        log.info("Weights ready in %.1fs", time.monotonic() - t0)
 
         # Load config — app_files land in cwd on fal, not next to __file__
         config_path = Path(__file__).parent / "config" / "chord.yaml"
         if not config_path.exists():
             config_path = Path("config") / "chord.yaml"
         config = OmegaConf.load(str(config_path))
+
+        t0 = time.monotonic()
         model = ChordModel(config)
         model.load_state_dict(load_torch_file(str(ckpt_path)))
-
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.eval()
         model.to(self.device)
         self.model = model
+        log.info("Model loaded to %s in %.1fs", self.device, time.monotonic() - t0)
 
     @fal.endpoint("/")
     def run(self, request: Input) -> Output:
