@@ -2,7 +2,7 @@ import copy
 from pathlib import Path
 
 import fal
-from fal.toolkit import Image, download_file
+from fal.toolkit import Image
 from pydantic import BaseModel, Field
 
 
@@ -98,10 +98,7 @@ class ChordPBR(fal.App):
         from chord.util import get_positions, rgb_to_srgb
 
         # Fetch input image
-        from PIL import Image as PILImage
-
-        img_path = download_file(request.image.url)
-        src = PILImage.open(str(img_path)).convert("RGB")
+        src = request.image.to_pil("RGB")
         ori_h, ori_w = src.size[1], src.size[0]
 
         # Tensor transform + resize to 1024x1024
