@@ -3,11 +3,25 @@ from pathlib import Path
 
 import fal
 from fal.toolkit import Image
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
 class Input(BaseModel):
     image: Image = Field(description="Source image to extract PBR maps from")
+    resolution: int = Field(
+        default=1024, ge=512, le=2048,
+        description="Processing resolution (output matches input dimensions)",
+    )
+    light_position: list[float] = Field(
+        default=[0.0, 0.0, 10.0],
+        description="Point light [x,y,z] for relit output",
+    )
+    include_relit: bool = Field(
+        default=True,
+        description="Whether to compute relit image (skip saves ~10% time)",
+    )
 
 
 class Output(BaseModel):
@@ -15,7 +29,7 @@ class Output(BaseModel):
     normal: Image = Field(description="Normal map in tangent space")
     roughness: Image = Field(description="Roughness map (grayscale)")
     metalness: Image = Field(description="Metalness map (grayscale)")
-    relit: Image = Field(description="Re-rendered image under point light")
+    relit: Optional[Image] = Field(default=None, description="Re-rendered image under point light")
 
 
 HF_REPO_ID = "Ubisoft/ubisoft-laforge-chord"
