@@ -11,9 +11,11 @@ class Input(BaseModel):
 
 
 class Output(BaseModel):
-    images: list[Image] = Field(
-        description="[basecolor, normal, roughness, metalness, relit]"
-    )
+    basecolor: Image = Field(description="Basecolor / albedo map")
+    normal: Image = Field(description="Normal map in tangent space")
+    roughness: Image = Field(description="Roughness map (grayscale)")
+    metalness: Image = Field(description="Metalness map (grayscale)")
+    relit: Image = Field(description="Re-rendered image under point light")
 
 
 HF_REPO_ID = "Ubisoft/ubisoft-laforge-chord"
@@ -131,15 +133,13 @@ class ChordPBR(fal.App):
         # Resize outputs back to original dimensions
         resize_back = v2.Resize(size=(ori_h, ori_w), antialias=True)
 
-        images = [
-            Image.from_pil(to_pil_image(resize_back(out["basecolor"]).squeeze(0))),
-            Image.from_pil(to_pil_image(resize_back(out["normal"]).squeeze(0))),
-            Image.from_pil(to_pil_image(resize_back(out["roughness"]).squeeze(0))),
-            Image.from_pil(to_pil_image(resize_back(out["metalness"]).squeeze(0))),
-            Image.from_pil(to_pil_image(resize_back(rendered).squeeze(0))),
-        ]
-
-        return Output(images=images)
+        return Output(
+            basecolor=Image.from_pil(to_pil_image(resize_back(out["basecolor"]).squeeze(0))),
+            normal=Image.from_pil(to_pil_image(resize_back(out["normal"]).squeeze(0))),
+            roughness=Image.from_pil(to_pil_image(resize_back(out["roughness"]).squeeze(0))),
+            metalness=Image.from_pil(to_pil_image(resize_back(out["metalness"]).squeeze(0))),
+            relit=Image.from_pil(to_pil_image(resize_back(rendered).squeeze(0))),
+        )
 
 # # gradio
 # if __name__ == "__main__":
