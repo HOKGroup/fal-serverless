@@ -22,7 +22,7 @@ HF_FILENAME = "chord_v1.safetensors"
 
 class ChordPBR(fal.App):
     app_name = "chord-pbr-python"
-    machine_type = "GPU-A100"
+    machine_type = "GPU-H100"
     keep_alive = 300
     max_concurrency = 1
     app_files = ["chord", "config"]
