@@ -42,6 +42,7 @@ class ChordPBR(fal.App):
     app_name = "chord-pbr-python"
     machine_type = "GPU-H100"
     keep_alive = 300
+    min_concurrency = 0
     max_concurrency = 1
     app_files = ["chord", "config"]
     app_files_ignore = [r"\.pyc$", r"__pycache__/"]
