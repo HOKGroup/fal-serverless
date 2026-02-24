@@ -75,8 +75,11 @@ class ChordPBR(fal.App):
         except LocalEntryNotFoundError:
             ckpt_path = hf_hub_download(**dl_kwargs)
 
-        # Load config and model
-        config = OmegaConf.load(str(Path(__file__).parent / "config" / "chord.yaml"))
+        # Load config — app_files land in cwd on fal, not next to __file__
+        config_path = Path(__file__).parent / "config" / "chord.yaml"
+        if not config_path.exists():
+            config_path = Path("config") / "chord.yaml"
+        config = OmegaConf.load(str(config_path))
         model = ChordModel(config)
         model.load_state_dict(load_torch_file(str(ckpt_path)))
 
