@@ -113,38 +113,49 @@ class ChordPBR(fal.App):
         from chord.module import make
         from chord.util import get_positions, rgb_to_srgb
 
-        # Fetch input image
         src = request.image.to_pil("RGB")
+        if src.width < 1 or src.height < 1:
+            raise ValueError("Invalid image: width and height must be >= 1")
         ori_h, ori_w = src.size[1], src.size[0]
+        res = request.resolution
 
-        # Tensor transform + resize to 1024x1024
         to_tensor = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
         image = to_tensor(src).to(self.device)
-        x = v2.Resize(size=(1024, 1024), antialias=True)(image).unsqueeze(0)
+        x = v2.Resize(size=(res, res), antialias=True)(image).unsqueeze(0)
 
-        # Inference
-        with torch.no_grad(), torch.autocast(device_type=self.device.type):
-            out = self.model(x)
+        try:
+            with torch.no_grad(), torch.autocast(device_type=self.device.type):
+                out = self.model(x)
+        except torch.cuda.OutOfMemoryError:
+            torch.cuda.empty_cache()
+            raise RuntimeError(
+                f"CUDA out of memory at resolution {res}. "
+                "Try a lower resolution (e.g. 512)."
+            )
 
-        # Relit computation
-        maps = copy.deepcopy(out)
-        maps["metallic"] = maps.get("metalness", torch.zeros_like(maps["basecolor"]))
-        h, w = maps["basecolor"].shape[-2:]
-        light = make("point-light", {"position": [0, 0, 10]}).to(self.device)
-        pos = get_positions(h, w, 10).to(self.device)
-        camera = torch.tensor([0, 0, 10.0]).to(self.device)
-        for key in maps:
-            if maps[key].dim() == 3:
-                maps[key] = maps[key].unsqueeze(0)
-            maps[key] = maps[key].permute(0, 2, 3, 1)
-        rgb = (
-            self.model.model.compute_render(maps, camera, pos, light)
-            .squeeze(0)
-            .permute(0, 3, 1, 2)
-        )
-        rendered = torch.clamp(rgb_to_srgb(rgb), 0, 1)
+        # Conditional relit computation
+        rendered_img = None
+        if request.include_relit:
+            maps = copy.deepcopy(out)
+            maps["metallic"] = maps.get("metalness", torch.zeros_like(maps["basecolor"]))
+            h, w = maps["basecolor"].shape[-2:]
+            lp = request.light_position
+            light = make("point-light", {"position": lp}).to(self.device)
+            pos = get_positions(h, w, lp[2]).to(self.device)
+            camera = torch.tensor([0, 0, lp[2]], dtype=torch.float32).to(self.device)
+            for key in maps:
+                if maps[key].dim() == 3:
+                    maps[key] = maps[key].unsqueeze(0)
+                maps[key] = maps[key].permute(0, 2, 3, 1)
+            rgb = (
+                self.model.model.compute_render(maps, camera, pos, light)
+                .squeeze(0)
+                .permute(0, 3, 1, 2)
+            )
+            rendered = torch.clamp(rgb_to_srgb(rgb), 0, 1)
+            resize_back = v2.Resize(size=(ori_h, ori_w), antialias=True)
+            rendered_img = Image.from_pil(to_pil_image(resize_back(rendered).squeeze(0)))
 
-        # Resize outputs back to original dimensions
         resize_back = v2.Resize(size=(ori_h, ori_w), antialias=True)
 
         return Output(
@@ -152,7 +163,7 @@ class ChordPBR(fal.App):
             normal=Image.from_pil(to_pil_image(resize_back(out["normal"]).squeeze(0))),
             roughness=Image.from_pil(to_pil_image(resize_back(out["roughness"]).squeeze(0))),
             metalness=Image.from_pil(to_pil_image(resize_back(out["metalness"]).squeeze(0))),
-            relit=Image.from_pil(to_pil_image(resize_back(rendered).squeeze(0))),
+            relit=rendered_img,
         )
 
 # # gradio
