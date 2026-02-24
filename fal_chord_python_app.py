@@ -6,11 +6,11 @@ from fal.toolkit import Image, download_file
 from pydantic import BaseModel, Field
 
 
-class ChordInput(BaseModel):
-    image_url: str = Field(description="Source image URL")
+class Input(BaseModel):
+    image: Image = Field(description="Source image to extract PBR maps from")
 
 
-class ChordOutput(BaseModel):
+class Output(BaseModel):
     images: list[Image] = Field(
         description="[basecolor, normal, roughness, metalness, relit]"
     )
@@ -88,8 +88,8 @@ class ChordPBR(fal.App):
         model.to(self.device)
         self.model = model
 
-    @fal.endpoint("/generate")
-    def generate(self, input: ChordInput) -> ChordOutput:
+    @fal.endpoint("/")
+    def run(self, request: Input) -> Output:
         import torch
         from torchvision.transforms import v2
         from torchvision.transforms.functional import to_pil_image
@@ -100,7 +100,7 @@ class ChordPBR(fal.App):
         # Fetch input image
         from PIL import Image as PILImage
 
-        img_path = download_file(input.image_url)
+        img_path = download_file(request.image.url)
         src = PILImage.open(str(img_path)).convert("RGB")
         ori_h, ori_w = src.size[1], src.size[0]
 
@@ -142,7 +142,7 @@ class ChordPBR(fal.App):
             Image.from_pil(to_pil_image(resize_back(rendered).squeeze(0))),
         ]
 
-        return ChordOutput(images=images)
+        return Output(images=images)
 
 # gradio
 if __name__ == "__main__":
