@@ -14,6 +14,5 @@ def test_fal_appclient_smoke():
     from fal_chord_python_app import ChordPBR
 
     with fal.app.AppClient(ChordPBR) as client:
-        # Intentional invalid URL to verify endpoint wiring and error propagation path.
         with pytest.raises(Exception):
-            client.generate({"image_url": "https://invalid.example/not-found.png"})
+            client.generate({"image": {"url": "https://invalid.example/not-found.png"}})

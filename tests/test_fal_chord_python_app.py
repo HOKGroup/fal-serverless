@@ -1,4 +1,4 @@
-from fal_chord_python_app import ChordPBR
+from fal_chord_python_app import ChordInput, ChordPBR
 
 
 def test_app_config_and_packaging():
@@ -13,8 +13,16 @@ def test_app_config_and_packaging():
 
 def test_requirements_include_key_packages():
     reqs = ChordPBR.requirements
-    assert "torch" in reqs
-    assert "torchvision" in reqs
-    assert "omegaconf" in reqs
-    assert "safetensors" in reqs
+    assert "torch==2.10.0" in reqs
+    assert "torchvision==0.25.0" in reqs
+    assert "omegaconf==2.3.0" in reqs
+    assert "safetensors==0.7.0" in reqs
     assert "huggingface_hub[hf_xet]" in reqs
+
+
+def test_input_defaults_and_bounds():
+    payload = ChordInput(image={"url": "https://example.com/input.png"})
+
+    assert payload.image.url == "https://example.com/input.png"
+    assert payload.resolution == 1024
+    assert payload.include_relit is False
