@@ -10,6 +10,7 @@ from torchvision.transforms.functional import to_pil_image
 from huggingface_hub import hf_hub_download, login
 import spaces
 
+from fal_chord_python_app import chord_normal_to_height
 from chord import ChordModel
 from chord.module import make
 from chord.util import get_positions, rgb_to_srgb
@@ -74,16 +75,18 @@ def inference(img):
         MODEL_OBJ._ckpt = MODEL_CKPT_PATH  # store path inside object
 
     if img is None:
-        return None, None, None, None, None
+        return None, None, None, None, None, None
     
     ori_h, ori_w = img.size[1], img.size[0]
     out = run_model(MODEL_OBJ, img)
     maps = copy.deepcopy(out)
     rendered = relit(MODEL_OBJ, maps)
+    height = chord_normal_to_height(out["normal"])
     resize_back = v2.Resize(size=(ori_h, ori_w), antialias=True)
     return (
         to_pil_image(resize_back(out["basecolor"]).squeeze(0)),
         to_pil_image(resize_back(out["normal"]).squeeze(0)),
+        to_pil_image(resize_back(height).squeeze(0)),
         to_pil_image(resize_back(out["roughness"]).squeeze(0)),
         to_pil_image(resize_back(out["metalness"]).squeeze(0)),
         to_pil_image(resize_back(rendered).squeeze(0)),
@@ -125,6 +128,7 @@ with gr.Blocks(title="Chord") as demo:
             gr.Markdown("### Predicted Channels")
             basecolor_out = gr.Image(label="Basecolor", height=512)
             normal_out = gr.Image(label="Normal", height=512)
+            height_out = gr.Image(label="Height", height=512)
             roughness_out = gr.Image(label="Roughness", height=512)
             metallic_out = gr.Image(label="Metalness", height=512)
 
@@ -134,7 +138,7 @@ with gr.Blocks(title="Chord") as demo:
     run_button.click(
         inference,
         inputs=[input_img],
-        outputs=[basecolor_out, normal_out, roughness_out, metallic_out, render_out]
+        outputs=[basecolor_out, normal_out, height_out, roughness_out, metallic_out, render_out]
     )
 
 if __name__ == "__main__":

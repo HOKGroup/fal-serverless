@@ -1,4 +1,4 @@
-from fal_chord_python_app import ChordInput, ChordPBR
+from fal_chord_python_app import ChordInput, ChordOutput, ChordPBR
 
 
 def test_app_config_and_packaging():
@@ -26,3 +26,11 @@ def test_input_defaults_and_bounds():
     assert payload.image.url == "https://example.com/input.png"
     assert payload.resolution == 1024
     assert payload.include_relit is False
+
+
+def test_output_includes_height_map():
+    assert "height" in ChordOutput.model_fields
+
+
+def test_height_conversion_helper_exists_on_fal_module():
+    assert hasattr(ChordPBR.generate.__globals__["chord_normal_to_height"], "__call__")

@@ -21,6 +21,17 @@ python_version: 3.12
 
 Official implementation of the paper "**Chord: Chain of Rendering Decomposition for PBR Material Estimation from Generated Texture Images**".
 
+## Outputs
+
+The fal app and local Gradio demo now produce:
+
+- `basecolor`
+- `normal`
+- `height` derived from the predicted normal map
+- `roughness`
+- `metalness`
+- optional `relit`
+
 ## License
 
 This project is released under the **Ubisoft Machine Learning License (Research-Only - Copyleft)**. See the full terms in the [LICENSE](LICENSE) file.
